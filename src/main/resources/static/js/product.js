@@ -1,19 +1,23 @@
 'use strict';
 class Model{
-    constructor(){
-		this.inventory=[
-			{nombre: "Manzanas", precio:5000.0, inventario: 25},
-			{nombre: "Limones", precio:2300.0, inventario: 15},
-			{nombre: "Peras", precio:2700.0, inventario: 33},
-			{nombre: "Arandanos", precio:9300.0, inventario: 5},
-			{nombre: "Tomates", precio:2100.0, inventario: 42},
-			{nombre: "Fresas", precio:4100.0, inventario: 3},
-			{nombre: "Helado", precio:4500.0, inventario: 41},
-			{nombre: "Galletas", precio:500.0, inventario: 8},
-			{nombre: "Chocolates", precio:3500.0, inventario: 25},
-			{nombre: "Jamon", precio:15000.0, inventario: 25},
-		]
-    }
+  constructor(){}
+	
+	getDefaultHeaders(){
+		return {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json',
+			// 'Authorization': localStorage.token,
+		  }
+	}
+
+	async fetchProducts() {
+		const request = await fetch('api/products',{
+			method: 'GET',
+			headers: this.getDefaultHeaders(),
+		});
+		const products = await request.json();
+		this.inventory = products;
+	} 
 
 	addProduct(product){
 		this.inventory.push(product);
@@ -86,6 +90,9 @@ class Model{
 }
 class View{
     constructor(){
+    }
+	getView(){
+		
 		this.app = this.getElement('#root');
 		this.title = this.createElement('h1');
 		this.title.textContent = 'Inventario de productos';
@@ -136,7 +143,7 @@ class View{
 
 		this.app
 		.append(this.form,this.inventoryTable,this.deleteButton,this.modifyButton,this.informButton);
-    }
+	}
 
 	createElement(tag,className){
 		const element = document.createElement(tag);
@@ -168,7 +175,7 @@ class View{
 			const precio = this._priceAddValue;
 			const inventario = this._inventoryAddValue;
 			
-			const product = {nombre:nombre, precio:precio, inventario:inventario};
+			const product = {name:nombre, price:precio, quantity:inventario};
 			handler(product);
 		})
 	}
@@ -179,7 +186,7 @@ class View{
 			const precio = this._priceAddValue;
 			const inventario = this._inventoryAddValue;
 			
-			const product = {nombre:nombre, precio:precio, inventario:inventario};
+			const product = {name:nombre, price:precio, quantity:inventario};
 			handler(product);
 		})
 	}
@@ -190,7 +197,7 @@ class View{
 			const precio = this._priceAddValue;
 			const inventario = this._inventoryAddValue;
 			
-			const product = {nombre:nombre, precio:precio, inventario:inventario};
+			const product = {name:nombre, price:precio, quantity:inventario};
 			handler(product);
 		})
 	}
@@ -218,16 +225,16 @@ class View{
 		else{
 			inventory.forEach( product =>{
 				const tr = this.createElement('tr');
-				tr.id = product.nombre;
+				tr.id = product.id;
 
 				const nombre = this.createElement('td');
-				nombre.textContent = product.nombre;
+				nombre.textContent = product.name;
 
 				const precio = this.createElement('td');
-				precio.textContent = product.precio;
+				precio.textContent = product.price;
 
 				const inventario = this.createElement('td');
-				inventario.textContent = product.inventario
+				inventario.textContent = product.quantity
 
 				tr.append(nombre,precio,inventario);
 				this.inventoryTable.append(tr);
@@ -237,34 +244,36 @@ class View{
 
 }
 class Controller{
-    constructor(view,model){
-        this.view = view;
-		this.model = model;
-		this.onInventoryChanged(this.model.inventory);
-		this.model.bindInventoryChanged(this.onInventoryChanged);
-
-		this.view.bindAddProduct(this.handleAddProduct);
-		this.view.bindModifyProduct(this.handleModifyProduct);
-		this.view.bindDeleteProduct(this.handleDeteleProduct);
-		this.view.bindInform(this.handleInform);    
+  constructor(view,model){
+    	this.view = view;
+		this.model = model;  
 	}
 
 	start(){
-		this.view.displayInventory(this.model.inventory);
+		this.view.getView();
+		this.model.fetchProducts().then(() => {
+			this.view.displayInventory(this.model.inventory);
+		})
+		this.onInventoryChanged(this.model.inventory);
+		this.model.bindInventoryChanged(this.onInventoryChanged);
+		this.view.bindAddProduct(this.handleAddProduct);
+		this.view.bindModifyProduct(this.handleModifyProduct);
+		this.view.bindDeleteProduct(this.handleDeteleProduct);
+		this.view.bindInform(this.handleInform);  
 	}
 
 	onInventoryChanged = (inventory) => {
 		this.view.displayInventory(inventory);
 	}
 
-	verifyProduct(nuevoNombre) {
-		const encuentraNombre = ({ nombre }) => nombre === nuevoNombre;
-        const existeNombre = this.model.inventory.some(encuentraNombre);
-        return existeNombre;
+	verifyProduct(newProductName) {
+		const findName = ({ name }) => name === newProductName;
+        const isExist = this.model.inventory.some(findName);
+        return isExist;
 	}
 
 	handleAddProduct = (product) => {
-		if (!this.verifyProduct(product.nombre)){
+		if (!this.verifyProduct(product.name)){
 			this.model.addProduct(product);
 		}
 	}
