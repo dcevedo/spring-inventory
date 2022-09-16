@@ -19,9 +19,17 @@ class Model{
 		this.inventory = products;
 	} 
 
-	addProduct(product){
-		this.inventory.push(product);
-		this.onInventoryChanged(this.inventory);
+	async addProduct(product){
+		const request = await fetch('api/products',{
+			method: 'POST',
+			headers: this.getDefaultHeaders(),
+			body: JSON.stringify(product)
+		});
+		const newProduct = await request.json();
+		console.log(newProduct);
+		this.fetchProducts().then(() =>{
+			this.onInventoryChanged(this.inventory);
+		})
 	}
 
 	modifyProduct(product){
@@ -91,13 +99,24 @@ class Model{
 class View{
     constructor(){
     }
+	createElement(tag,className){
+		const element = document.createElement(tag);
+		if(className)element.classList.add(className); 
+		return element;
+	}
+
+	getElement(selector){
+		const element = document.querySelector(selector);
+		return element;
+	}
+
 	getView(){
 		
 		this.app = this.getElement('#root');
 		this.title = this.createElement('h1');
 		this.title.textContent = 'Inventario de productos';
 
-		this.form = this.createElement('form');
+		this.addForm = this.createElement('form');
 		
 		this.productAddField = this.createElement('input');
 		this.productAddField.type = 'text';
@@ -114,7 +133,7 @@ class View{
 		this.addButton = this.createElement('button');
 		this.addButton.textContent = 'Agregar Producto';
 
-		this.form
+		this.addForm
 		.append(this.productAddField,this.priceAddField,this.inventoryAddField,this.addButton);
 
 		this.inventoryTable = this.createElement('table','inventory-table');
@@ -142,17 +161,12 @@ class View{
 		this.informButton.textContent = 'Informe';
 
 		this.app
-		.append(this.form,this.inventoryTable,this.deleteButton,this.modifyButton,this.informButton);
+		.append(this.addForm,this.inventoryTable,this.deleteButton,this.modifyButton,this.informButton);
 	}
-
-	createElement(tag,className){
-		const element = document.createElement(tag);
-		if(className)element.classList.add(className); 
-		return element;
-	}
-	getElement(selector){
-		const element = document.querySelector(selector);
-		return element;
+	clearAddFields(){
+		this.productAddField.value="";
+		this.priceAddField.value="";
+		this.inventoryAddField.value="";
 	}
 
 	get _productAddValue(){
@@ -168,9 +182,9 @@ class View{
 	}
 
 	bindAddProduct(handler){
-		this.form.addEventListener('submit', event =>{
+		this.addForm.addEventListener('submit', event =>{
 			event.preventDefault();
-
+			
 			const nombre = this._productAddValue;
 			const precio = this._priceAddValue;
 			const inventario = this._inventoryAddValue;
@@ -253,8 +267,8 @@ class Controller{
 		this.view.getView();
 		this.model.fetchProducts().then(() => {
 			this.view.displayInventory(this.model.inventory);
+			this.onInventoryChanged(this.model.inventory);
 		})
-		this.onInventoryChanged(this.model.inventory);
 		this.model.bindInventoryChanged(this.onInventoryChanged);
 		this.view.bindAddProduct(this.handleAddProduct);
 		this.view.bindModifyProduct(this.handleModifyProduct);
@@ -266,28 +280,78 @@ class Controller{
 		this.view.displayInventory(inventory);
 	}
 
-	verifyProduct(newProductName) {
+	isProductExist(newProductName) {
 		const findName = ({ name }) => name === newProductName;
         const isExist = this.model.inventory.some(findName);
         return isExist;
 	}
 
-	handleAddProduct = (product) => {
-		if (!this.verifyProduct(product.name)){
-			this.model.addProduct(product);
+	isBlank(product){
+		for (const [key,value] of Object.entries(product)) {
+			if( value.trim().length === 0){
+				return true;
+			}			
 		}
 	}
 
+	checkLetters(string){
+		return /^[a-zA-Z]+$/.test(string);
+	}
+
+	isTypes(product){
+		let msg;
+		const isTypeName = (this.checkLetters(product.name));
+		if(!isTypeName){ msg = "En el campo nombre solo pueden ir palabras";}
+
+		const isTypePrice = !isNaN(Number.parseFloat(product.price).toFixed(1));
+		if(!isTypePrice){ msg = "En el campo precio solo pueden ir numeros";}
+
+		const isTypeQuantity = !isNaN(Number.parseInt(product.quantity));
+		if(!isTypeQuantity){ msg = "En el campo cantidad solo pueden ir numeros";}
+		
+		// const isTypes = [isTypeName,isTypePrice,isTypeQuantity];
+		// const varToString = varObj => Object.keys(varObj)[0];
+		// const Type = varToString(isTypes.find((element) => element === false));
+		if(isTypeName && isTypePrice && isTypeQuantity){
+		// if(Type){
+			return {
+				result : true,
+ 			};
+		}else{
+			return {
+				result : false,
+				msg : msg,
+			};
+		}
+
+	}
+
+	handleAddProduct = (product) => {
+		if(this.isBlank(product)){
+			alert("Los campos estan vacios");
+			this.view.clearAddFields();
+		}
+		else if(!this.isTypes(product).result){
+			alert(this.isTypes(product).msg)
+			this.view.clearAddFields();
+		}
+		else if (!this.isProductExist(product.name)){
+			this.model.addProduct(product);
+		}else{alert("El producto ya se encuentra en la tabla")}
+	}
+
 	handleModifyProduct = (product) =>{
-		if(this.verifyProduct(product.nombre)){
+		if(this.isBlank(product)) alert("Los campos estan vacios");
+		if(this.isProductExist(product.nombre)){
 			this.model.modifyProduct(product);
 		}
 	}
 
 	handleDeteleProduct = (product) => {
-		if(this.verifyProduct(product.nombre)){
+		// if(this.isBlank(product)) alert("Los campos estan vacios");
+		if(this.isProductExist(product.nombre)){
 			this.model.deleteProduct(product);
-		}
+		}else{alert("El producto no se encuentra en la tabla")}
 	}
 
 	handleInform = () => {
