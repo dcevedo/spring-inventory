@@ -15,8 +15,15 @@ class Model{
 			method: 'GET',
 			headers: this.getDefaultHeaders(),
 		});
-		const products = await request.json();
-		this.inventory = products;
+		const responseStatus = request.status;
+		if(responseStatus === 200){
+			const products = await request.json();
+
+			this.inventory = products;	
+		}
+		else{
+			alert("ERROR EN EL SERVIDOR: " + responseStatus);
+		}
 	} 
 
 	async addProduct(product){
@@ -25,27 +32,61 @@ class Model{
 			headers: this.getDefaultHeaders(),
 			body: JSON.stringify(product)
 		});
-		const newProduct = await request.json();
-		console.log(newProduct);
-		this.fetchProducts().then(() =>{
-			this.onInventoryChanged(this.inventory);
-		})
+		const responseStatus = request.status;
+		if(responseStatus === 201){
+			const newProduct = await request.json();
+			console.log(newProduct);
+			
+			this.fetchProducts().then(() =>{
+				this.onInventoryChanged(this.inventory);
+			})
+		}else{
+			alert("ERROR EN EL SERVIDOR: " + responseStatus);
+		}
+
 	}
 
-	modifyProduct(product){
+	async modifyProduct(product){
+		//No funciona
 		const changeProduct = (tableProduct) => {
-			if(product.nombre === tableProduct.nombre){
+			if(product.name === tableProduct.name){
 				tableProduct = product;
 			} 
 			return tableProduct;
 		}
-		this.inventory = this.inventory.map(changeProduct);
-		this.onInventoryChanged(this.inventory);	
+		const toModifyProduct = this.inventory.map(changeProduct);
+		const request = await fetch(`api/products/${toModifyProduct[0].id}`,{
+			method: 'PUT',
+			headers: this.getDefaultHeaders(),
+			body: JSON.stringify(toModifyProduct)
+		});
+		const responseStatus = request.status;
+		if(responseStatus === 200){
+			this.fetchProducts().then(() =>{
+				this.onInventoryChanged(this.inventory);
+			})
+		}else{
+			alert("Error en el servidor con codigo: " + responseStatus);
+		}
+
 	}
 
-	deleteProduct(product){
-		this.inventory =  this.inventory.filter(({nombre}) => nombre !== product.nombre)
-		this.onInventoryChanged(this.inventory);
+	async deleteProduct(product){
+		const toDeleteProduct =  this.inventory.filter(({name}) => name === product.name)
+		const request = await fetch(`api/products/${toDeleteProduct[0].id}`,{
+			method: 'DELETE',
+			headers: this.getDefaultHeaders(),
+			// body: JSON.stringify(product)
+		});
+		const responseStatus = request.status;
+		if(responseStatus === 204){
+			this.fetchProducts().then(() =>{
+				this.onInventoryChanged(this.inventory);
+			})
+		}else{
+			alert("Error en el servidor con codigo: " + responseStatus);
+		}
+
 	}
 
 	generateInform(){
@@ -61,30 +102,30 @@ class Model{
 		let compareProduct = this.inventory[0];
         let higherPriceProduct = compareProduct;
         for (const product of this.inventory){
-            if (product.precio > compareProduct.precio) {
+            if (product.price > compareProduct.price) {
                 higherPriceProduct = product;
                 compareProduct = product;
             }
         }
-        return higherPriceProduct.nombre;
+        return higherPriceProduct.name;
 	}
 
 	getLowestPrice(){
 		let compareProduct = this.inventory[0];
         let lowestPriceProduct = compareProduct;
         for (const product of this.inventory){
-            if (product.precio < compareProduct.precio) {
+            if (product.price < compareProduct.price) {
                 lowestPriceProduct = product;
                 compareProduct = product;
             }
         }
-        return lowestPriceProduct.nombre;
+        return lowestPriceProduct.name;
 	}
 
 	getAveragePrice(){
 		let totalPrice = 0;
         for (const product of this.inventory){
-            totalPrice += product.precio;
+            totalPrice += product.price;
         }
         const averagePrice = (totalPrice / this.inventory.length).toFixed(1);
         return averagePrice;
@@ -223,7 +264,7 @@ class View{
 	}
 
 	displayInform(inform){
-		console.log(inform);
+		alert(inform);
 	}
 
 	displayInventory(inventory){
@@ -341,15 +382,15 @@ class Controller{
 	}
 
 	handleModifyProduct = (product) =>{
-		if(this.isBlank(product)) alert("Los campos estan vacios");
-		if(this.isProductExist(product.nombre)){
+		// if(this.isBlank(product)) alert("Los campos estan vacios");
+		if(this.isProductExist(product.name)){
 			this.model.modifyProduct(product);
 		}
 	}
 
 	handleDeteleProduct = (product) => {
 		// if(this.isBlank(product)) alert("Los campos estan vacios");
-		if(this.isProductExist(product.nombre)){
+		if(this.isProductExist(product.name)){
 			this.model.deleteProduct(product);
 		}else{alert("El producto no se encuentra en la tabla")}
 	}
