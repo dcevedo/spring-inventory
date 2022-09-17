@@ -71,9 +71,9 @@ class Model{
 
 	}
 
-	async deleteProduct(product){
-		const toDeleteProduct =  this.inventory.filter(({name}) => name === product.name)
-		const request = await fetch(`api/products/${toDeleteProduct[0].id}`,{
+	async deleteProduct(productId){
+		// const toDeleteProduct =  this.inventory.filter(({name}) => name === product.name)
+		const request = await fetch(`api/products/${productId}`,{
 			method: 'DELETE',
 			headers: this.getDefaultHeaders(),
 			// body: JSON.stringify(product)
@@ -202,7 +202,20 @@ class View{
 		this.informButton.textContent = 'Informe';
 
 		this.app
-		.append(this.addForm,this.inventoryTable,this.deleteButton,this.modifyButton,this.informButton);
+			.append(this.addForm,this.inventoryTable,this.deleteButton,this.modifyButton,this.informButton)
+		
+		this.app.addEventListener("click", event => {
+			const withinTable = event.composedPath().includes(this.inventoryTable);
+			const withinDeleteBtn = event.composedPath().includes(this.deleteButton);
+			const withinInformBtn = event.composedPath().includes(this.informButton);
+			const withinModifyBtn = event.composedPath().includes(this.modifyButton);
+			const withinAddBtn = event.composedPath().includes(this.addButton);
+			
+			if(!withinTable && !withinDeleteBtn && !withinInformBtn && !withinModifyBtn && !withinAddBtn){
+				this.setSelectedProduct(null);
+			}
+		});
+
 	}
 	clearAddFields(){
 		this.productAddField.value="";
@@ -248,12 +261,11 @@ class View{
 
 	bindDeleteProduct(handler){
 		this.deleteButton.addEventListener('click',() => {
-			const nombre = this._productAddValue;
-			const precio = this._priceAddValue;
-			const inventario = this._inventoryAddValue;
-			
-			const product = {name:nombre, price:precio, quantity:inventario};
-			handler(product);
+			if(this.getSelectedProduct()){
+				handler(this.getSelectedProduct());
+			}else{
+				alert("Seleccione un producto!!")
+			}
 		})
 	}
 
@@ -261,6 +273,14 @@ class View{
 		this.informButton.addEventListener('click',() =>{
 			handler();
 		})
+	}
+
+	setSelectedProduct(row){
+		this._selectedProduct = row;
+	}
+
+	getSelectedProduct(){
+		return this._selectedProduct;
 	}
 
 	displayInform(inform){
@@ -283,16 +303,32 @@ class View{
 				tr.id = product.id;
 
 				const nombre = this.createElement('td');
-				nombre.textContent = product.name;
+				const nombreLink = this.createElement('a',`row-${product.id}`)
+				nombreLink.setAttribute('href','#');
+				nombreLink.tabIndex = -1;
+				nombreLink.textContent = product.name; 
+				nombre.append(nombreLink);
 
 				const precio = this.createElement('td');
-				precio.textContent = product.price;
+				const precioLink = this.createElement('a',`row-${product.id}`)
+				precioLink.setAttribute('href','#');
+				precioLink.tabIndex = -1;
+				precioLink.textContent = product.price; 
+				precio.append(precioLink);
 
 				const inventario = this.createElement('td');
-				inventario.textContent = product.quantity
+				const inventarioLink = this.createElement('a',`row-${product.id}`)
+				inventarioLink.setAttribute('href','#');
+				inventarioLink.tabIndex = -1;
+				inventarioLink.textContent = product.quantity; 
+				inventario.append(inventarioLink);
 
 				tr.append(nombre,precio,inventario);
+
 				this.inventoryTable.append(tr);
+
+				const row = document.querySelectorAll(`.row-${product.id}`);
+				row.forEach(el => el.addEventListener("click",this.setSelectedProduct.bind(this,product.id)));
 			})
 		}
 	}
@@ -325,6 +361,12 @@ class Controller{
 		const findName = ({ name }) => name === newProductName;
         const isExist = this.model.inventory.some(findName);
         return isExist;
+	}
+
+	isProductExistById(productId) {
+		const findName = ({ id }) => id === productId;
+    const isExist = this.model.inventory.some(findName);
+    return isExist;
 	}
 
 	isBlank(product){
@@ -388,10 +430,9 @@ class Controller{
 		}
 	}
 
-	handleDeteleProduct = (product) => {
-		// if(this.isBlank(product)) alert("Los campos estan vacios");
-		if(this.isProductExist(product.name)){
-			this.model.deleteProduct(product);
+	handleDeteleProduct = (productId) => {
+		if(this.isProductExistById(productId)){
+			this.model.deleteProduct(productId);
 		}else{alert("El producto no se encuentra en la tabla")}
 	}
 
