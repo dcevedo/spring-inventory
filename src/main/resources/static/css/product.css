@@ -1,13 +1,18 @@
 *,
 *::before,
 *::after {
-	box-sizing: border-box
+	box-sizing: border-box;	
 }
 
 html {
 	font-family: sans-serif;
 	font-size: 1rem;
-	color: #444;
+	font-weight: 600;
+	color: #2C5799;
+	background-image: linear-gradient(to right top, #4e3873, #783f7c, #a0487e, #c3547a, #e06673, #ef776c, #f98b65, #ffa160, #ffb65e, #ffcb5f, #ffe265, #f9f871);	background-repeat: no-repeat;
+	background-size: cover;
+	width: 100%;
+	height: 100%;
 }
 
 #root {
@@ -33,9 +38,9 @@ button {
 
 button {
 	cursor: pointer;
-	background: #007bff;
+	background: #00AEBC;
 	color: white;
-	border: 2px solid #007bff;
+	border: 2px solid #00AEBC;
 	margin: 0 .5rem;
 }
 
@@ -45,18 +50,38 @@ button:active {
 
 table {
 	border: 1px solid #000;
-	border-collapse: separate;
+	border-collapse: collapse;
 	width: 50%;
-	margin-bottom: 10px;
+	margin: 10px;
+	background: #0093C0;
 }
 
 
 th,td {
-	border: 1px solid #555;
+	border: 2px solid #0075B5;
+}
+
+tr:hover,
+tr:focus-within {
+  background: #000064;
+  outline: none;
+}
+
+td > a:first-child {
+	display: flex;
+	padding: 10px;
+	text-decoration: none;
+	color: inherit;
+	z-index: 0;
+	
+	/* &:focus {
+	  outline: 0;
+	} */
 }
 
 th{
-	color: #007bff;
+	color: black;
+	font-weight: 900;
 }
 
 [type="text"] {
@@ -66,7 +91,7 @@ th{
 [type="text"]:active,
 [type="text"]:focus {
 	outline: 0;
-	border: 2px solid #007bff;
+	border: 2px solid #2C5799;
 }
 
 [type="checkbox"] {
