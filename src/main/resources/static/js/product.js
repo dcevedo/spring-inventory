@@ -424,8 +424,11 @@ class Controller{
 	}
 
 	handleModifyProduct = (product) =>{
-		// if(this.isBlank(product)) alert("Los campos estan vacios");
-		if(this.isProductExist(product.name)){
+		if(this.isBlank(product)){
+			alert("Los campos estan vacios");
+			this.view.clearAddFields();
+		}
+			if(this.isProductExist(product.name)){
 			this.model.modifyProduct(product);
 		}
 	}

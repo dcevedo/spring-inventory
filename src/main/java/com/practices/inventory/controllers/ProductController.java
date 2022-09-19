@@ -13,8 +13,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import com.practices.inventory.entities.Product;
+import com.practices.inventory.exceptions.ProductMalformedException;
 import com.practices.inventory.exceptions.ProductNotFoundException;
 import com.practices.inventory.repositories.ProductRepository;
 
@@ -31,9 +33,9 @@ public class ProductController {
     
     @GetMapping("{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id){
-            Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException(id));
-            return new ResponseEntity<Product>(product, HttpStatus.OK);
+        Product product = productRepository.findById(id)
+            .orElseThrow(() -> new ProductNotFoundException(id));
+        return new ResponseEntity<Product>(product, HttpStatus.OK);
     }
 
     @GetMapping
@@ -45,6 +47,9 @@ public class ProductController {
 
     @PostMapping
     public ResponseEntity<Product> addProduct(@RequestBody Product product){
+        if(NumberUtils.isDigits(product.getName())){
+            throw new ProductMalformedException("el nombre del producto no puede ser un numero");
+        }
         productRepository.save(product);
         Product newProduct = productRepository.findById(product.getId())
             .orElseThrow(() -> new ProductNotFoundException("Producto creado no fue encontrado"));
@@ -54,7 +59,9 @@ public class ProductController {
 
     @PutMapping("{id}")
     public Product updateProduct(@PathVariable Long id,@RequestBody Product product){
-        
+        if(NumberUtils.isDigits(product.getName())){
+            throw new ProductMalformedException("el nombre del producto no puede ser un numero");
+        }
         Product persistProduct = productRepository.findById(id)
             .orElseThrow(() -> new ProductNotFoundException(id));
         persistProduct.setName(product.getName());
